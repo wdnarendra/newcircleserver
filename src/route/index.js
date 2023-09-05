@@ -1,9 +1,7 @@
 const route = require('express').Router()
 
-const { authenticationController } = require('../controller/')
+const authencationRoutes = require('./authentication')
 
-// const apiController = require('../controller/controller')
-
-route.route('/authentication').post(authenticationController)
+route.use('/authentication', authencationRoutes)
 
 module.exports = route

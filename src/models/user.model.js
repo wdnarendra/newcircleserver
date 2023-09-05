@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
 const UserSchema = mongoose.Schema({
+    email: { type: String, trim: true, unique: true },
     mobileNumber: { type: String, trim: true },
     backgroundPath: { type: String, trim: true, default: 'nopicture.circle' },
     gender: { type: String, enum: ['male', 'female'] },

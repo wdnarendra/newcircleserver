@@ -8,6 +8,8 @@ require('./src/config/connect')(config.MONGO_URL)
 
 const morgan = require('./src/config/morgan')
 
+require('./src/utils/ApiError')
+
 const { errorHandlor, errorConverter } = require('./src/middleware/error')
 
 const route = require('./src/route')
@@ -20,12 +22,7 @@ app.use(express.json())
 
 app.use((req, res, next) => {
     req.id = uuid()
-    // if (!req.body.operationName)
-    //     next(new ApiError('/app', httpStatus.NOT_FOUND, 'operationName key not exist'))
-    // else {
-    //     req.operationName = req.body.operationName
-    //     next()
-    // }
+    next()
 }, morgan)
 
 app.use(route)
