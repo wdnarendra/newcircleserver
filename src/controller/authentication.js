@@ -4,6 +4,9 @@ const httpStatus = require("http-status");
 const jwt = require('jsonwebtoken')
 const User = require('../models/user.model')
 const { JWT_SECRET } = require('../config/config')
+const college = require('../models/college.model')
+const specilization = require('../models/speciliazation.model')
+const degree = require('../models/degree.model')
 
 const checkUser = catchAsync(async (req, res, next) => {
     const { userName, email, token } = req.query
@@ -37,4 +40,20 @@ const updateUser = catchAsync(async (req, res, next) => {
 
 })
 
-module.exports = { checkUser, updateUser }
+const fetchData = catchAsync(async (req, res, next) => {
+
+    const { type } = req.query
+
+    let model = college
+
+    if (type === 'specilization') model = specilization
+
+    if (type === 'degree') model = degree
+
+    const response = await model.find({})
+
+    return res.json({ statusCode: 200, data: response })
+
+})
+
+module.exports = { checkUser, updateUser, fetchData }
