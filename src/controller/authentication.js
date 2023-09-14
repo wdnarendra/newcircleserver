@@ -43,7 +43,7 @@ const updateUser = catchAsync(async (req, res, next) => {
 
 const fetchData = catchAsync(async (req, res, next) => {
 
-    const { type } = req.query
+    const { type } = req.params
 
     let model = college
 
