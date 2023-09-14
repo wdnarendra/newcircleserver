@@ -1,3 +1,3 @@
 const authenticationController = require('./authentication')
-
-module.exports = { authenticationController }
+const userController = require('./user')
+module.exports = { authenticationController, userController }
