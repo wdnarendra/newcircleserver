@@ -7,6 +7,7 @@ const { JWT_SECRET } = require('../config/config')
 const college = require('../models/college.model')
 const specilization = require('../models/speciliazation.model')
 const degree = require('../models/degree.model')
+const categories = require('../models/categories.model')
 
 const checkUser = catchAsync(async (req, res, next) => {
     const { userName, email, token } = req.query
@@ -49,6 +50,8 @@ const fetchData = catchAsync(async (req, res, next) => {
     if (type === 'specilization') model = specilization
 
     if (type === 'degree') model = degree
+
+    if (type === 'categories') model = categories
 
     const response = await model.find({})
 
