@@ -43,6 +43,9 @@ const updateUser = catchAsync(async (req, res, next) => {
         Like.create({ userName: user.userName, personLikes: [] })
         ])
     }
+    if (req.body.userName) {
+        req.body.userName = req.body.userName.toLowerCase().trim()
+    }
     Object.assign(user, req.body)
     Object.assign(user, { flag: true })
     await user.save()
