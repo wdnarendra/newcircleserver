@@ -10,7 +10,14 @@ const LikedBy = require('../models/likedby.model')
 const getProfile = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ _id: req.userId })
     if (!user) throw NotFoundError('user not exist')
-    return res.json({ statusCode: 200, data: user })
+    const [follows, followers] = await Promise.all([Follow.findOne({ userName: user.userName }),
+    Followers.findOne({ id: user.userName })])
+    return res.json({
+        statusCode: 200, data: {
+            ...user.toObject(), follows: follows?.follows?.length,
+            followers: followers?.followers?.length
+        }
+    })
 })
 
 const getPosts = catchAsync(async (req, res, next) => {
