@@ -16,14 +16,14 @@ const UserSchema = mongoose.Schema({
         name: String,
         specialisation: String,
         degree: String,
-        start: Date,
-        end: Date
+        start: String,
+        end: String
     }],
     profession: [{
         name: String,
         position: String,
-        start: Date,
-        end: Date
+        start: String,
+        end: String
     }],
     name: { type: String, trim: true },
     userName: { type: String, trim: true, lowercase: true, unique: true },

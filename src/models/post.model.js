@@ -22,11 +22,11 @@ const postObjectSchema = mongoose.Schema({
         type: Array,
         default: []
     },
-    filePath: {
+    filePath: [{
         type: String,
         trim: true,
         default: 'nopicture.circle'
-    }
+    }]
 }, { timestamps: true })
 
 const PostSchema = mongoose.Schema({
