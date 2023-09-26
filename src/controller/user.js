@@ -26,19 +26,61 @@ const getPosts = catchAsync(async (req, res, next) => {
     limit = Number(limit) || 10
     page = Number(page) || 1
     const skip = (page - 1) * limit
-    const user = await User.findOne({ _id: userId })
+    const [user, requestUser] = await Promise.all([User.findOne({ _id: userId }), User.findOne({ _id: req.userId })])
     if (!user)
         throw new NotFoundError('user not exist')
-    const posts = await Post.aggregate([{ $match: { userName: user.userName } }, {
+    let [posts, likedpost] = await Promise.all([Post.aggregate([{ $match: { userName: user.userName } }, {
         $project: {
             post: { $sortArray: { input: '$posts', sortBy: { date: -1 } } }
         }
     }, {
         $unwind: { path: '$post' }
     }, {
+        $lookup: {
+            from: "Likedby",
+            localField: "post.postId",
+            foreignField: "id",
+            as: "likedby"
+        }
+    }, {
+        $unwind: { path: '$likedby' }
+    }, {
+        $set: {
+            likedby: {
+                $cond: {
+                    if: { $isArray: "$likedby.likedby" },
+                    then: { $size: "$likedby.likedby" },
+                    else: 0
+                }
+            }
+        }
+    }, {
+        $lookup: {
+            from: "Comment",
+            localField: "post.postId",
+            foreignField: "id",
+            as: "comment"
+        }
+    }, {
+        $unwind: { path: '$comment' }
+    }, {
+        $set: {
+            comment: {
+                $cond: {
+                    if: { $isArray: "$comment.comments" },
+                    then: { $size: "$comment.comments" },
+                    else: 0
+                }
+            }
+        }
+    }, {
         $skip: skip
-    }, { $limit: limit }])
-    return res.json({ statusCode: 200, data: posts })
+    }, { $limit: limit }]), Like.findOne({ userName: requestUser.userName })])
+    posts = posts.map((value) => {
+        value.isliked = likedpost.personLikes?.some((value2) => (value2 === value?.post?.postId))
+        return value
+    })
+    return res.json({ statusCode: 200, data: { user, posts } })
 })
 
 const getFollowers = catchAsync(async (req, res, next) => {
