@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const UserSchema = mongoose.Schema({
     email: { type: String, trim: true, unique: true },
     mobileNumber: { type: String, trim: true },
-    backgroundPath: { type: String, trim: true, default: 'nopicture.circle' },
+    backgroundPath: { type: String, trim: true, default: '' },
     gender: { type: String, enum: ['male', 'female'] },
     interest: { type: Array, default: [] },
     isVerified: Boolean,
@@ -27,7 +27,7 @@ const UserSchema = mongoose.Schema({
     }],
     name: { type: String, trim: true },
     userName: { type: String, trim: true, lowercase: true, unique: true },
-    profilePath: { type: String, trim: true, default: 'nopicture.circle' },
+    profilePath: { type: String, trim: true, default: '' },
     flag: Boolean
 }, { timestamps: true })
 

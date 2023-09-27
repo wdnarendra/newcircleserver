@@ -8,14 +8,16 @@ const LikedBy = require('../models/likedby.model')
 
 
 const getProfile = catchAsync(async (req, res, next) => {
-    const user = await User.findOne({ _id: req.userId })
+    const { userId } = req.params
+    const [user, requestUser] = await Promise.all([User.findOne({ _id: userId }), User.findOne({ _id: req.userId })])
     if (!user) throw NotFoundError('user not exist')
-    const [follows, followers] = await Promise.all([Follow.findOne({ userName: user.userName }),
-    Followers.findOne({ id: user.userName })])
+    const [follows, followers, isfollowed] = await Promise.all([Follow.findOne({ userName: user.userName }),
+    Followers.findOne({ id: user.userName }), Follow.findOne({ userName: requestUser.userName })])
+    const temp = isfollowed.follows?.some((value2) => (value2 === user.userName))
     return res.json({
         statusCode: 200, data: {
             ...user.toObject(), follows: follows?.follows?.length,
-            followers: followers?.followers?.length
+            followers: followers?.followers?.length, isfollowed: temp
         }
     })
 })
@@ -29,7 +31,7 @@ const getPosts = catchAsync(async (req, res, next) => {
     const [user, requestUser] = await Promise.all([User.findOne({ _id: userId }), User.findOne({ _id: req.userId })])
     if (!user)
         throw new NotFoundError('user not exist')
-    let [posts, likedpost] = await Promise.all([Post.aggregate([{ $match: { userName: user.userName } }, {
+    let [posts, likedpost, followed] = await Promise.all([Post.aggregate([{ $match: { userName: user.userName } }, {
         $project: {
             post: { $sortArray: { input: '$posts', sortBy: { date: -1 } } }
         }
@@ -75,12 +77,23 @@ const getPosts = catchAsync(async (req, res, next) => {
         }
     }, {
         $skip: skip
-    }, { $limit: limit }]), Like.findOne({ userName: requestUser.userName })])
+    }, { $limit: limit }]), Like.findOne({ userName: requestUser.userName }), Follow.findOne({ userName: requestUser.userName })])
+    const temp = followed.follows?.some((value2) => (value2 === user.userName))
     posts = posts.map((value) => {
+        value.user = {
+            _id: user.id,
+            userName: user.userName,
+            backgroundPath: user.backgroundPath,
+            name: user.name,
+            profilePath: user.profilePath,
+            bio: user.bio,
+            isVerified: user.isVerified,
+            isfollowed: temp
+        }
         value.isliked = likedpost.personLikes?.some((value2) => (value2 === value?.post?.postId))
         return value
     })
-    return res.json({ statusCode: 200, data: { user, posts } })
+    return res.json({ statusCode: 200, data: posts })
 })
 
 const getFollowers = catchAsync(async (req, res, next) => {

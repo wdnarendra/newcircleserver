@@ -18,7 +18,7 @@ const communityPostObjectSchema = mongoose.Schema({
     filePath: {
         type: String,
         trim: true,
-        default: 'nopicture.circle'
+        default: ''
     }
 }, { timestamps: true })
 

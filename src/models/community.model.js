@@ -33,12 +33,12 @@ const communityObjectSchema = mongoose.Schema({
     backgroundPath: {
         type: String,
         trim: true,
-        default: 'nopicture.circle'
+        default: ''
     },
     profilePath: {
         type: String,
         trim: true,
-        default: 'nopicture.circle'
+        default: ''
     }
 }, { timestamps: true })
 
