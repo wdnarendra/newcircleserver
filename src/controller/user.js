@@ -8,7 +8,10 @@ const LikedBy = require('../models/likedby.model')
 
 
 const getProfile = catchAsync(async (req, res, next) => {
-    const { userId } = req.params
+    let { userId } = req.params
+    if (userId === 'self') {
+        userId = req.userId
+    }
     const [user, requestUser] = await Promise.all([User.findOne({ _id: userId }), User.findOne({ _id: req.userId })])
     if (!user) throw NotFoundError('user not exist')
     const [follows, followers, isfollowed] = await Promise.all([Follow.findOne({ userName: user.userName }),
