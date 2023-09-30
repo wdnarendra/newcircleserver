@@ -37,4 +37,86 @@ const createPost = catchAsync(async (req, res, next) => {
 
 })
 
-module.exports = { createPost }
+
+const createComment = catchAsync(async (req, res, next) => {
+
+
+    let { comment, postId, commentId, nested } = req.body
+
+    const user = await User.findOne({ _id: req.userId })
+
+    let find = { id: postId }
+    let update = 'comments'
+    if (commentId) {
+        find = { id: postId, 'comments.commentId': commentId }
+        update = 'comments.$.nested'
+        commentId = commentId + '-' + generateRandomString(10)
+    }
+    else {
+        commentId = postId + '-' + generateRandomString(10)
+    }
+    const date = new Date()
+
+    await Comment.updateOne(find, { $push: { [update]: { date, comment, commentId, userName: user.userName } } })
+
+    return res.json({ statusCode: 200, data: { date, postId, commentId, comment, userName: user.userName } })
+
+})
+
+
+const loadComment = catchAsync(async (req, res, next) => {
+
+    let { postId } = req.params
+
+    let { limit, page, nested, commentId } = req.query
+    limit = Number(limit) || 10
+    page = Number(page) || 1
+    const skip = (page - 1) * limit
+    let response = ''
+    if (commentId) {
+        response = await Comment.aggregate([
+            {
+                $match: { id: postId }
+            },
+            {
+                $project: {
+                    comments: {
+                        $filter: {
+                            input: "$comments",
+                            as: "item",
+                            cond: { $eq: ["$$item.commentId", commentId] }
+                        }
+                    }
+                }
+            }, { $set: { comments: { $arrayElemAt: ['$comments', 0] } } }, { $set: { comments: '$comments.nested' } }, { $unwind: '$comments' },
+            { $skip: skip }, { $limit: limit },
+            {
+                $lookup: {
+                    from: 'Users',
+                    localField: 'comments.userName',
+                    foreignField: 'userName',
+                    as: 'user'
+                }
+            }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name' } } }, { $unset: 'user' }
+        ]);
+    }
+    else {
+        response = await Comment.aggregate([{ $match: { id: postId } }, {
+            $project: {
+                comments: { $slice: ['$comments', skip, limit] }
+            }
+        }, { $unwind: '$comments' }, {
+            $lookup: {
+                from: 'Users',
+                localField: 'comments.userName',
+                foreignField: 'userName',
+                as: 'user'
+            }
+        }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name' } } }, { $unset: 'user' },
+        ])
+    }
+
+    return res.json({ statusCode: 200, data: response })
+
+})
+module.exports = { createPost, createComment, loadComment }

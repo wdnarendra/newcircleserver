@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
 const commentsObjectSchema = mongoose.Schema({
+    nested:[],
     userName: {
         type: String,
         trim: true,
