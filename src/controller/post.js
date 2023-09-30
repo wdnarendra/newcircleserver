@@ -97,7 +97,7 @@ const loadComment = catchAsync(async (req, res, next) => {
                     foreignField: 'userName',
                     as: 'user'
                 }
-            }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name' } } }, { $unset: 'user' }
+            }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name', gender: '$user.gender', _id: '$user._id' } } }, { $unset: 'user' }
         ]);
     }
     else {
@@ -112,7 +112,17 @@ const loadComment = catchAsync(async (req, res, next) => {
                 foreignField: 'userName',
                 as: 'user'
             }
-        }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name' } } }, { $unset: 'user' },
+        }, { $unwind: '$user' }, { $set: { 'comments.user': { profilePath: '$user.profilePath', name: '$user.name', gender: '$user.gender', _id: '$user._id' } } }, { $unset: 'user' }, {
+            $set: {
+                repliedBy: {
+                    $cond: {
+                        if: { $isArray: "$comments.nested" },
+                        then: { $size: "$comments.nested" },
+                        else: 0
+                    }
+                }
+            }
+        }, { $unset: 'comments.nested' }
         ])
     }
 
