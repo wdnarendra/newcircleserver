@@ -120,7 +120,7 @@ const getFollowers = catchAsync(async (req, res, next) => {
             as: 'followers'
         }
     }])
-    return res.json({ statusCode: 200, data: posts })
+    return res.json({ statusCode: 200, data: posts[0] })
 })
 
 const getFollowing = catchAsync(async (req, res, next) => {
@@ -144,7 +144,7 @@ const getFollowing = catchAsync(async (req, res, next) => {
             as: 'follows'
         }
     }])
-    return res.json({ statusCode: 200, data: posts })
+    return res.json({ statusCode: 200, data: posts[0] })
 })
 
 const followAndUndo = catchAsync(async (req, res, next) => {
@@ -175,4 +175,16 @@ const likeAndUndo = catchAsync(async (req, res, next) => {
     return res.json({ statusCode: 200, data: true })
 })
 
-module.exports = { getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo }
+const search = catchAsync(async (req, res, next) => {
+    const { search } = req.params
+    let { limit, page } = req.query
+    limit = Number(limit) || 10
+    page = Number(page) || 1
+    const skip = (page - 1) * limit
+
+    const response = await User.find({ $or: [{ name: { $regex: search, $options: 'i' } }, { userName: { $regex: search, $options: 'i' } }] }).skip(skip).limit(limit).select('name gender userName _id profilePath isVerified')
+
+    return res.json({ statusCode: 200, data: response })
+
+})
+module.exports = { getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo, search }
