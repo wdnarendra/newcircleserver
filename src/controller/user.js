@@ -112,14 +112,22 @@ const getFollowers = catchAsync(async (req, res, next) => {
         $project: {
             followers: { $slice: ['$followers', skip, limit] }
         }
-    }, {
+    },
+    {
         $lookup: {
             from: 'Users',
-            localField: 'followers',
-            foreignField: 'userName',
+            let: { temp: '$followers' },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: { $in: ['$userName', '$$temp'] }
+                    }
+                },
+            ],
             as: 'followers'
         }
-    }])
+    }
+    ])
     return res.json({ statusCode: 200, data: posts[0] })
 })
 
@@ -136,14 +144,22 @@ const getFollowing = catchAsync(async (req, res, next) => {
         $project: {
             follows: { $slice: ['$follows', skip, limit] }
         }
-    }, {
+    },
+    {
         $lookup: {
             from: 'Users',
-            localField: 'follows',
-            foreignField: 'userName',
+            let: { temp: '$follows' },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: { $in: ['$userName', '$$temp'] }
+                    }
+                },
+            ],
             as: 'follows'
         }
-    }])
+    }
+    ])
     return res.json({ statusCode: 200, data: posts[0] })
 })
 
@@ -187,4 +203,76 @@ const search = catchAsync(async (req, res, next) => {
     return res.json({ statusCode: 200, data: response })
 
 })
-module.exports = { getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo, search }
+
+const home = catchAsync(async (req, res, next) => {
+
+    const userId = req.userId
+    let { limit, page, long, lat } = req.query
+    limit = Number(limit) || 10
+    page = Number(page) || 1
+    const skip = (page - 1) * limit
+    const user = await User.findOne({ _id: userId })
+    let [post, isliked, isfollowed] = await Promise.all([Post.aggregate([{
+        $match:
+            { 'posts.postLoc': { $geoWithin: { $centerSphere: [[Number(long), Number(lat)], 12 / 3963.2] } } }
+    }, { $project: { userName: 1, posts: 1, _id: 1 } }, { $unwind: "$posts" }, { $match: { 'posts.postLoc': { $geoWithin: { $centerSphere: [[Number(long), Number(lat)], 12 / 3963.2] } } } },
+    { $sort: { 'posts.date': -1 } }, { "$skip": skip }, { "$limit": limit },
+    { $set: { post: '$posts' } }, { $unset: 'posts' },
+    {
+        $lookup: {
+            from: "Likedby",
+            localField: "post.postId",
+            foreignField: "id",
+            as: "likedby"
+        }
+    }, {
+        $unwind: { path: '$likedby' }
+    }, {
+        $set: {
+            likedby: {
+                $cond: {
+                    if: { $isArray: "$likedby.likedby" },
+                    then: { $size: "$likedby.likedby" },
+                    else: 0
+                }
+            }
+        }
+    }, {
+        $lookup: {
+            from: "Comment",
+            localField: "post.postId",
+            foreignField: "id",
+            as: "comment"
+        }
+    }, {
+        $unwind: { path: '$comment' }
+    }, {
+        $set: {
+            comment: {
+                $cond: {
+                    if: { $isArray: "$comment.comments" },
+                    then: { $size: "$comment.comments" },
+                    else: 0
+                }
+            }
+        }
+    }, {
+        $lookup: {
+            from: 'Users',
+            let: { temp: '$userName' },
+            pipeline: [{ $match: { $expr: { $eq: ['$$temp', '$userName'] } } }, { $project: { name: 1, _id: 1, profilePath: 1, gender: 1, userName: 1, isVerified: 1 } }],
+            as: 'user'
+        }
+    }, { $unwind: '$user' }
+    ]), Like.findOne({ userName: user.userName }), Follow.findOne({ userName: user.userName })])
+
+    post = post.map((value) => {
+        value.user.isfollowed = isfollowed.follows?.some((value2) => (value2 === value.user.userName))
+        value.isliked = isliked.personLikes?.some((value2) => (value2 === value?.post?.postId))
+        return value
+    })
+
+    return res.json({ statusCode: 200, data: post })
+
+})
+module.exports = { getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo, search, home }

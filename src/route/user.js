@@ -11,6 +11,7 @@ route.route('/getFollowers/:userId').get(userController.getFollowers)
 route.route('/followandunfollow/:userId').get(validatejwt, userController.followAndUndo)
 route.route('/likeandunlike/:postId').get(validatejwt, userController.likeAndUndo)
 route.route('/search/:search').get(userController.search)
+route.route('/home').get(validatejwt, userController.home)
 
 
 module.exports = route
