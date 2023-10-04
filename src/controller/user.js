@@ -275,4 +275,11 @@ const home = catchAsync(async (req, res, next) => {
     return res.json({ statusCode: 200, data: post })
 
 })
-module.exports = { getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo, search, home }
+
+const upload = catchAsync(async (req, res, next) => {
+    if (req.files) {
+        return res.json({ statusCode: 200, data: req.files })
+    }
+    throw new NotFoundError('files are not present')
+})
+module.exports = { upload, getProfile, getPosts, getFollowers, getFollowing, followAndUndo, likeAndUndo, search, home }
