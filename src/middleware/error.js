@@ -31,7 +31,7 @@ module.exports.errorConverter = (err, req, res, next) => {
         next(new UnauthorizedError('/src/middleware/error'))
     }
 
-    if (err instanceof ApiError || err instanceof UnauthorizedError || err instanceof NotFoundError) {
+    if (err instanceof ApiError || err instanceof UnauthorizedError || err instanceof NotFoundError || err instanceof BadRequestError) {
         next(err)
     }
     else

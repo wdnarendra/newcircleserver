@@ -2,7 +2,7 @@ const catchAsync = require("../utils/catchAsync");
 const Post = require('../models/post.model')
 const User = require('../models/user.model')
 const Comment = require('../models/comment.model')
-
+const Report = require('../models/report.model')
 const LikedBy = require('../models/likedby.model')
 
 
@@ -129,4 +129,36 @@ const loadComment = catchAsync(async (req, res, next) => {
     return res.json({ statusCode: 200, data: response })
 
 })
-module.exports = { createPost, createComment, loadComment }
+
+const deletePost = catchAsync(async (req, res, next) => {
+
+    const { postId } = req.params
+
+    const user = await User.findOne({ _id: req.userId })
+
+    const post = await Post.findOne({ userName: user.userName, 'posts.postId': postId })
+
+    if (!post) throw new BadRequestError('post does not exist')
+
+    await Post.updateOne({ userName: user.userName }, { $pull: { posts: { postId } } })
+
+    return res.json({ statusCode: 200, data: true })
+
+})
+
+const reportPost = catchAsync(async (req, res, next) => {
+
+    const { comment, postId } = req.body
+
+    const post = await Post.findOne({ 'posts.postId': postId })
+
+    if (!post) throw new BadRequestError('post does not exist')
+
+    const fetchReport = await Report.findOne({ userId: req.userId })
+
+    if (!fetchReport) await Report.create({ comment, userId: req.userId, postId })
+
+    return res.json({ statusCode: 200, data: true })
+
+})
+module.exports = { createPost, createComment, loadComment, deletePost, reportPost }
