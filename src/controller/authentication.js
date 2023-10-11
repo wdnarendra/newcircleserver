@@ -37,14 +37,15 @@ const updateUser = catchAsync(async (req, res, next) => {
 
     const user = await User.findOne({ _id: req.userId })
     if (!user) throw new NotFoundError('/checkUser')
-    if (!user.flag) {
-        await Promise.all([Follow.create({ userName: user.userName, follows: [] }),
-        Follower.create({ id: user.userName, type: 'person', followers: [] }),
-        Like.create({ userName: user.userName, personLikes: [] })
-        ])
-    }
     if (req.body.userName) {
         req.body.userName = req.body.userName.toLowerCase().trim()
+    }
+    const userName = user.userName ? user.userName : req.body.userName
+    if (!user.flag) {
+        await Promise.all([Follow.create({ userName, follows: [] }),
+        Follower.create({ id: userName, type: 'person', followers: [] }),
+        Like.create({ userName: userName, personLikes: [] })
+        ])
     }
     Object.assign(user, req.body)
     Object.assign(user, { flag: true })
