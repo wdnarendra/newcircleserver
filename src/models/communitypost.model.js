@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const communityPostObjectSchema = mongoose.Schema({
     date: {
         type: Date,
-        default: Date()
+        default: new Date()
     },
     post: {
         type: String,

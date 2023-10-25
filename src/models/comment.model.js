@@ -10,7 +10,7 @@ const commentsObjectSchema = mongoose.Schema({
     },
     date: {
         type: Date,
-        default: Date()
+        default: new Date()
     },
     comment: {
         type: String,

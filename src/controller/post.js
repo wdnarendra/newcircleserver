@@ -101,7 +101,7 @@ const loadComment = catchAsync(async (req, res, next) => {
         ]);
     }
     else {
-        response = await Comment.aggregate([{ $match: { id: postId } }, {
+        response = await Comment.aggregate([{ $match: { id: postId } }, { $sort: { 'comments.date': -1 } }, {
             $project: {
                 comments: { $slice: ['$comments', skip, limit] }
             }

@@ -11,6 +11,7 @@ const categories = require('../models/categories.model')
 const Follow = require('../models/follow.model')
 const Follower = require('../models/followers.model')
 const Like = require('../models/likes.model')
+const Post = require('../models/post.model')
 const checkUser = catchAsync(async (req, res, next) => {
     const { userName, email, token } = req.query
     if (email) {
@@ -24,8 +25,9 @@ const checkUser = catchAsync(async (req, res, next) => {
         return res.json({ statusCode: 200, data: true })
     }
     if (token) {
-        const data = await firebase.verifyIdToken(token)
-        if (!data.email_verified) throw new ApiError('/checkUser', httpStatus.FORBIDDEN, 'Email is not verified yet! Please verify your mail first!!')
+        var data = await firebase.verifyIdToken(token)
+        data = await firebase.getUserByEmail(data.email)
+        if (!data.emailVerified) throw new ApiError('/checkUser', httpStatus.FORBIDDEN, 'Email is not verified yet! Please verify your mail first!!')
         let user = await User.findOne({ email: data.email })
         if (!user) { user = await User.create({ email: data.email }) }
         return res.json({ statusCode: 200, data: { adddeatils: user?.userName ? true : false, jwt: jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '30d' }) } })
@@ -44,7 +46,8 @@ const updateUser = catchAsync(async (req, res, next) => {
     if (!user.flag) {
         await Promise.all([Follow.create({ userName, follows: [] }),
         Follower.create({ id: userName, type: 'person', followers: [] }),
-        Like.create({ userName: userName, personLikes: [] })
+        Like.create({ userName: userName, personLikes: [] }),
+        Post.create({ userName: userName, posts: [] })
         ])
     }
     Object.assign(user, req.body)
