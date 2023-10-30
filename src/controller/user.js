@@ -91,7 +91,8 @@ const getPosts = catchAsync(async (req, res, next) => {
             profilePath: user.profilePath,
             bio: user.bio,
             isVerified: user.isVerified,
-            isfollowed: temp
+            isfollowed: temp,
+            gender: user.gender
         }
         value.isliked = likedpost.personLikes?.some((value2) => (value2 === value?.post?.postId))
         return value
