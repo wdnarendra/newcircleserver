@@ -6,5 +6,6 @@ module.exports = {
     NODE_ENV: process.env.NODE_ENV || 'staging',
     JWT_SECRET: process.env.JWT_SECRET || 'soemlajsdflkaslkdjfk',
     secretkey: process.env.secretkey,
-    accesskey: process.env.accesskey
+    accesskey: process.env.accesskey,
+    expoToken: process.env.expoToken
 }

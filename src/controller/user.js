@@ -5,7 +5,8 @@ const Follow = require('../models/follow.model')
 const Followers = require('../models/followers.model')
 const Like = require('../models/likes.model')
 const LikedBy = require('../models/likedby.model')
-
+const Token = require('../models/token.model')
+// const expo = require('../utils/sendnotification')
 
 const getProfile = catchAsync(async (req, res, next) => {
     let { userId } = req.params
@@ -26,19 +27,41 @@ const getProfile = catchAsync(async (req, res, next) => {
 })
 
 const getPosts = catchAsync(async (req, res, next) => {
-    const { userId } = req.params
-    let { limit, page } = req.query
+    let { userId } = req.params
+    let { limit, page, postId } = req.query
     limit = Number(limit) || 10
     page = Number(page) || 1
     const skip = (page - 1) * limit
+    let query = {
+        $project: {
+            post: {
+                $sortArray: {
+                    input: '$posts',
+                    sortBy: { date: -1 }
+                }
+            }
+        }
+    }
+    if (postId) {
+        userId = (await User.findOne({ userName: postId.split('-')[0] }))?._id
+        if (!userId) throw new NotFoundError('user not exist')
+        query = {
+            $project: {
+                post: {
+                    $filter: {
+                        input: "$posts",
+                        as: "item",
+                        cond: { $eq: ["$$item.postId", postId] }
+                    }
+                }
+            }
+        }
+    }
     const [user, requestUser] = await Promise.all([User.findOne({ _id: userId }), User.findOne({ _id: req.userId })])
     if (!user)
         throw new NotFoundError('user not exist')
-    let [posts, likedpost, followed] = await Promise.all([Post.aggregate([{ $match: { userName: user.userName } }, {
-        $project: {
-            post: { $sortArray: { input: '$posts', sortBy: { date: -1 } } }
-        }
-    }, {
+    let [posts, likedpost, followed] = await Promise.all([Post.aggregate([{ $match: { userName: user.userName } },
+        query, {
         $unwind: { path: '$post' }
     }, {
         $lookup: {
@@ -172,9 +195,17 @@ const followAndUndo = catchAsync(async (req, res, next) => {
     const check = await Follow.findOne({ userName: user.userName, follows: secondUser.userName })
     if (check) operator = '$pull'
     else operator = '$addToSet'
-    await Promise.all([Follow.updateOne({ userName: user.userName }, { [operator]: { follows: secondUser.userName } }),
-    Followers.updateOne({ id: secondUser.userName }, { [operator]: { followers: user.userName } })
+    const [_, __, ___] = await Promise.all([Follow.updateOne({ userName: user.userName }, { [operator]: { follows: secondUser.userName } }),
+    Followers.updateOne({ id: secondUser.userName }, { [operator]: { followers: user.userName } }),
+    Token.findOne({ userName: secondUser.userName })
     ])
+    if ((user_id !== userId) && !check) { }
+    // expo([{
+    //     to: ___?.expoToken,
+    //     sound: 'default',
+    //     body: `${user.userName} started following you`,
+    //     data: { url: `/user/${user.userName}`, userID: userId },
+    // }])
     return res.json({ statusCode: 200, data: true })
 })
 
@@ -183,12 +214,21 @@ const likeAndUndo = catchAsync(async (req, res, next) => {
     const { postId } = req.params
     let operator;
     const user = await User.findOne({ _id: userId })
+    const postUserName = postId.split('-')[0]
     const check = await Like.findOne({ userName: user.userName, personLikes: postId })
     if (check) operator = '$pull'
     else operator = '$addToSet'
-    await Promise.all([Like.updateOne({ userName: user.userName }, { [operator]: { personLikes: postId } }),
-    LikedBy.updateOne({ id: postId }, { [operator]: { likedby: user.userName } })
+    const [_, __, ___] = await Promise.all([Like.updateOne({ userName: user.userName }, { [operator]: { personLikes: postId } }),
+    LikedBy.updateOne({ id: postId }, { [operator]: { likedby: user.userName } }),
+    Token.findOne({ userName: postUserName })
     ])
+    if ((user !== postUserName) && !check) { }
+    // expo([{
+    //     to: ___?.expoToken,
+    //     sound: 'default',
+    //     body: `${user.userName} liked your post`,
+    //     data: { url: `/post/${postId}`, postID: postId },
+    // }])
     return res.json({ statusCode: 200, data: true })
 })
 

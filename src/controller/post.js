@@ -4,8 +4,8 @@ const User = require('../models/user.model')
 const Comment = require('../models/comment.model')
 const Report = require('../models/report.model')
 const LikedBy = require('../models/likedby.model')
-
-
+// const expo = require('../utils/sendnotification')
+const Token = require('../models/token.model')
 function generateRandomString(length) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -41,13 +41,18 @@ const createPost = catchAsync(async (req, res, next) => {
 const createComment = catchAsync(async (req, res, next) => {
 
 
-    let { comment, postId, commentId, nested } = req.body
+    let { comment, postId, commentId } = req.body
+
+    let postUserName = postId.split('-')[0]
 
     const user = await User.findOne({ _id: req.userId })
 
     let find = { id: postId }
     let update = 'comments'
     if (commentId) {
+        const repliedUserName = (await Comment.findOne({ id: postId, 'comments.commentId': commentId }).lean())
+        if (repliedUserName)
+            postUserName = repliedUserName.comments?.find((value) => (value.commentId === commentId))?.userName
         find = { id: postId, 'comments.commentId': commentId }
         update = 'comments.$.nested'
         commentId = commentId + '-' + generateRandomString(10)
@@ -57,7 +62,24 @@ const createComment = catchAsync(async (req, res, next) => {
     }
     const date = new Date()
 
-    await Comment.updateOne(find, { $push: { [update]: { date, comment, commentId, userName: user.userName } } })
+    const [_, __] = await Promise.all([Token.findOne({ userName: postUserName }), Comment.updateOne(find, { $push: { [update]: { date, comment, commentId, userName: user.userName } } })])
+
+    if (postUserName !== user.userName)
+        if (commentId){}
+            // expo([{
+            //     to: __?.expoToken,
+            //     sound: 'default',
+            //     body: `${user.userName} replied to your comment`,
+            //     data: { url: `/post/${postId}`, postID: postId },
+            // }])
+        else {
+            // expo([{
+            //     to: __?.expoToken,
+            //     sound: 'default',
+            //     body: `${user.userName} commented on your userprofile post`,
+            //     data: { url: `/post/${postId}`, postID: postId },
+            // }])
+        }
 
     return res.json({ statusCode: 200, data: { date, postId, commentId, comment, userName: user.userName } })
 
